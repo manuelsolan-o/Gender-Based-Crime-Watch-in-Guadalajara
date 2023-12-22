@@ -14,7 +14,13 @@ Esta aplicación tienen la intención de mejorar la conciencia y la vigilancia e
 <img src="media/crimeguf.gif" alt="BID" width="500" height="250"/>
 </p>
 
-Para correr esta app se deberá de correr el siguiente archivo en R Studio:
+Para correr esta app se deberán seguir los siguientes pasos:
+
+## Paso 0)
+Clonar este repositorio.
+
+## Paso 1)
+Correr el siguiente archivo en R Studio:
 
     app.qmd
 
