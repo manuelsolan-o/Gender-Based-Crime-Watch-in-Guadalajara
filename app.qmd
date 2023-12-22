@@ -1,0 +1,138 @@
+---
+title: "app"
+format: html
+editor: visual
+---
+
+```{r}
+# Cargar las bibliotecas necesarias
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(leaflet)
+library(readr)
+library(xtable)
+library(shinythemes)
+library(lubridate) 
+
+# Leer datos fuera del servidor
+data <- read_csv('data/datos-2023-12-19.csv') %>%
+    na.omit() %>%
+    mutate(Ano = year(fecha)) %>%  # Extraer el año de la fecha
+    rename(Bien_Afectado = bien_afectado , Fecha = fecha, Delito = delito)
+
+# Definir la interfaz de usuario
+ui <- fluidPage(
+    theme = shinytheme("flatly"),
+    titlePanel("Visualización de Datos de Crimen en el Área Metropolitana de Guadalajara\n"),
+    #ags$h3("Análisis y tendencias de crimen 2017-2023", style = "text-align: center;"), 
+    
+    # Utilizar fluidRow y column para un layout más flexible
+    fluidRow(
+        column(width = 5,
+               sidebarPanel(
+                   selectInput("crimenInput", "Seleccione un Tipo de Crimen:",
+                               choices = c('Violacion', 'Feminicidio', 'Abuso sexual infantil', 'Lesiones dolosas', 'Violencia familiar')),
+                   selectInput("anioInput", "Seleccione un Año:", choices = 2017:2023),
+                   actionButton("submit", "Cargar Mapa"),
+                   tags$h4(" "),
+                   tags$h4(" "),
+                   tags$h4("\n"),
+                   tags$h4("\n"),
+                   tags$h4("Notas de la Aplicación"),
+                   tags$p("Esta aplicación permite visualizar datos de crimen en el Área Metropolitana de Guadalajara durante los años 2017 - 2023"),
+                   tags$h4("Sígueme en Github:"),
+                   tags$a(href = "https://github.com/manuelsolan-o", "manuelsolan_o", target = "_blank")
+               )
+        ),
+        column(width = 7,
+               uiOutput("dynamicContent"),
+               leafletOutput("map", height = "600px"),  # Ajustar la altura del mapa según sea necesario
+               uiOutput("loadingMessage")
+        )
+    )
+)
+
+# Definir el servidor
+server <- function(input, output) {
+
+    color_dict <- c('Robo a negocio' = '#1f77b4', 
+                    'Robo a int de vehiculos' = '#aec7e8', 
+                    'Lesiones dolosas' = '#ff7f0e',
+                    'Robo a vehiculos particulares' = '#ffbb78', 
+                    'Homicidio doloso' = '#2ca02c',
+                    'Violencia familiar' = '#98df8a', 
+                    'Robo casa habitacion' = '#d62728', 
+                    'Robo a persona' = '#ff9896',
+                    'Abuso sexual infantil' = '#f7b6d2', 
+                    'Robo de motocicleta' = '#c7c7c7',
+                    'Robo a cuentahabientes' = '#8c564b', 
+                    'Robo a carga pesada' = '#c49c94',
+                    'Robo de autopartes' = '#e377c2', 
+                    'Violacion' = '#9467bd', 
+                    'Robo a bancos' = '#7f7f7f', 
+                    'Feminicidio' = '#c5b0d5')
+    
+createPopupHTML <- function(row) {
+  if(any(is.na(row[c(9, 1, 2)]))) {
+    return(NA)
+  }
+  info <- data.frame(Información = row[c(9, 1, 2)], stringsAsFactors = FALSE)
+  
+  # Estilos CSS para la tabla
+  estilos_css <- "<style>
+                    table { 
+                      border-collapse: collapse; 
+                    }
+                    th, td { 
+                      border: 1px solid black; 
+                      padding: 5px; 
+                    }
+                  </style>"
+
+  # Usar 'capture.output' directamente en 'xtable' para evitar caracteres extra
+  tabla_html <- capture.output(print(xtable(info, include.rownames = TRUE), type = "html", comment = FALSE))
+
+  # Combinar los estilos CSS con la tabla HTML, excluyendo líneas vacías o caracteres extra
+  html_output <- paste0(estilos_css, paste(tabla_html, collapse = "\n"), sep = "\n")
+
+  return(html_output)
+}
+            observeEvent(input$submit, {
+              showModal(modalDialog(
+              title = "Cargando...",
+              "Por favor espere mientras se carga el mapa.",
+              easyClose = TRUE,
+              footer = NULL
+            ))
+              
+        # Filtro de los datos
+             filtered_data <- data %>%
+                filter(Delito == input$crimenInput, Ano == input$anioInput)
+             
+            filtered_data2 <- filtered_data %>%
+                filter(Delito == input$crimenInput)
+        
+        output$map <- renderLeaflet({
+            if(nrow(filtered_data2) == 0) return(NULL)
+            info_htmls <- apply(filtered_data2, 1, createPopupHTML)
+
+            leaflet(filtered_data) %>%
+                addTiles() %>%
+                setView(lng = -103.39182, lat = 20.66682, zoom = 12) %>%
+                addCircleMarkers(
+                    lng = ~x, lat = ~y,
+                    radius = 3,
+                    color = color_dict[[input$crimenInput]],
+                    fillOpacity = 1,
+                    opacity = 1,
+                    popup = info_htmls
+                )
+        })
+        removeModal()
+    })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
