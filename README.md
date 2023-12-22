@@ -1,4 +1,4 @@
-# Visualizador de Criemenes de Género en Guadalajara
+# Visualizador de Crimenes de Género en Guadalajara
 
 Este proyecto fue realizado utilizando datos abiertos por el servicio público [IIEG](https://iieg.gob.mx/plataforma_seguridad/#/home)
 
@@ -13,3 +13,9 @@ Esta aplicación tienen la intención de mejorar la conciencia y la vigilancia e
  <p align="center">
 <img src="media/crimeguf.gif" alt="BID" width="500" height="250"/>
 </p>
+
+Para correr esta app se deberá de correr el siguiente archivo en R Studio:
+
+    app.qmd
+
+Por el momento no se ha subido a internet, por lo que solamente se puede correr de forma local.
